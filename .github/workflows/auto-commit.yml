@@ -1,52 +1,48 @@
-name: Smart Random Commits
+name: Realistic Activity Generator
 
 on:
   schedule:
-    - cron: '0 0 * * *'   # Runs daily (UTC)
+    # Run every 6 hours (gives random timing feel)
+    - cron: '0 */6 * * *'
   workflow_dispatch:
 
 jobs:
-  auto-commit:
+  realistic-activity:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Random commits and branches
+      - name: Generate realistic commits
         run: |
           git config --global user.name "prem7475"
           git config --global user.email "premnarayani1682@gmail.com"
 
-          # Randomly skip some days (about 30%)
-          SKIP=$((RANDOM % 3))
+          # Skip randomly (50% chance)
+          SKIP=$((RANDOM % 2))
           if [ "$SKIP" -eq 0 ]; then
-            echo "Skipping today..."
+            echo "Skipping this run..."
             exit 0
           fi
 
-          # Random number of commits (1 to 5)
-          COMMITS=$(( (RANDOM % 5) + 1 ))
+          # Random number of commits (1–3)
+          COMMITS=$(( (RANDOM % 3) + 1 ))
 
-          # Predefined branch names
-          BRANCH_NAMES=("main-temp" "second" "feature" "next")
-          INDEX=$((RANDOM % 4))
-          BRANCH=${BRANCH_NAMES[$INDEX]}-$(date +%s)
-
-          # Create and switch to new branch
-          git checkout -b $BRANCH
+          # Random file names
+          FILES=("notes.txt" "ideas.md" "progress.log" "todo.txt" "update.txt")
+          MESSAGES=("refactor logic" "update notes" "minor fix" "improve structure" "clean up code")
 
           for ((i=1;i<=COMMITS;i++))
           do
-            echo "Random commit $i on $(date)" >> activity.txt
-            git add activity.txt
-            git commit -m "Update $i on $(date +'%Y-%m-%d %H:%M:%S')"
+            INDEX=$((RANDOM % 5))
+            FILE=${FILES[$INDEX]}
+            MESSAGE=${MESSAGES[$INDEX]}
+
+            echo "Update on $(date)" >> $FILE
+            git add $FILE
+            git commit -m "$MESSAGE - $(date +'%Y-%m-%d %H:%M')"
           done
 
-          # Push new branch
-          git push origin $BRANCH
-
-          # Merge into main branch
-          git checkout main
-          git merge $BRANCH --no-edit
+          git pull origin main --rebase
           git push origin main
