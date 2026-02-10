@@ -1,0 +1,52 @@
+name: Smart Random Commits
+
+on:
+  schedule:
+    - cron: '0 0 * * *'   # Runs daily (UTC)
+  workflow_dispatch:
+
+jobs:
+  auto-commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Random commits and branches
+        run: |
+          git config --global user.name "prem7475"
+          git config --global user.email "premnarayani1682@gmail.com"
+
+          # Randomly skip some days (about 30%)
+          SKIP=$((RANDOM % 3))
+          if [ "$SKIP" -eq 0 ]; then
+            echo "Skipping today..."
+            exit 0
+          fi
+
+          # Random number of commits (1 to 5)
+          COMMITS=$(( (RANDOM % 5) + 1 ))
+
+          # Predefined branch names
+          BRANCH_NAMES=("main-temp" "second" "feature" "next")
+          INDEX=$((RANDOM % 4))
+          BRANCH=${BRANCH_NAMES[$INDEX]}-$(date +%s)
+
+          # Create and switch to new branch
+          git checkout -b $BRANCH
+
+          for ((i=1;i<=COMMITS;i++))
+          do
+            echo "Random commit $i on $(date)" >> activity.txt
+            git add activity.txt
+            git commit -m "Update $i on $(date +'%Y-%m-%d %H:%M:%S')"
+          done
+
+          # Push new branch
+          git push origin $BRANCH
+
+          # Merge into main branch
+          git checkout main
+          git merge $BRANCH --no-edit
+          git push origin main
