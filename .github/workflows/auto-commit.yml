@@ -1,48 +1,46 @@
-name: Realistic Activity Generator
+name: Weekday Activity
 
 on:
   schedule:
-    # Run every 6 hours (gives random timing feel)
-    - cron: '0 */6 * * *'
+    # Runs Monday–Friday at 10:30 AM IST (05:00 UTC)
+    - cron: '0 5 * * 1-5'
   workflow_dispatch:
 
 jobs:
-  realistic-activity:
+  weekday-activity:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Generate realistic commits
+      - name: Random weekday logic
         run: |
           git config --global user.name "prem7475"
           git config --global user.email "premnarayani1682@gmail.com"
 
-          # Skip randomly (50% chance)
-          SKIP=$((RANDOM % 2))
-          if [ "$SKIP" -eq 0 ]; then
-            echo "Skipping this run..."
+          # Random skip (~30% chance)
+          SKIP=$((RANDOM % 10))
+
+          # 0,1,2 = skip (~30%)
+          if [ "$SKIP" -lt 3 ]; then
+            echo "Skipping today..."
             exit 0
           fi
 
-          # Random number of commits (1–3)
-          COMMITS=$(( (RANDOM % 3) + 1 ))
+          FILE="dev-notes.md"
+          touch $FILE
 
-          # Random file names
-          FILES=("notes.txt" "ideas.md" "progress.log" "todo.txt" "update.txt")
-          MESSAGES=("refactor logic" "update notes" "minor fix" "improve structure" "clean up code")
+          TODAY=$(date +'%Y-%m-%d')
 
-          for ((i=1;i<=COMMITS;i++))
-          do
-            INDEX=$((RANDOM % 5))
-            FILE=${FILES[$INDEX]}
-            MESSAGE=${MESSAGES[$INDEX]}
+          # Prevent duplicate same-day commit
+          if grep -q "$TODAY" $FILE; then
+            echo "Already updated today."
+            exit 0
+          fi
 
-            echo "Update on $(date)" >> $FILE
-            git add $FILE
-            git commit -m "$MESSAGE - $(date +'%Y-%m-%d %H:%M')"
-          done
+          echo "- Work log entry for $TODAY" >> $FILE
 
-          git pull origin main --rebase
+          git add $FILE
+          git commit -m "docs: update daily log for $TODAY"
           git push origin main
